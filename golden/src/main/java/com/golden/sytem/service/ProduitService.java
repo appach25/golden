@@ -12,33 +12,40 @@ import java.util.Optional;
 public class ProduitService {
 
     private final ProduitRepository produitRepository;
+    private final ImageService imageService;
 
     @Autowired
-    public ProduitService(ProduitRepository produitRepository) {
+    public ProduitService(ProduitRepository produitRepository, ImageService imageService) {
         this.produitRepository = produitRepository;
+        this.imageService = imageService;
     }
 
-    public List<Produit> getAllProduits() {
+    public List<Produit> findAll() {
         return produitRepository.findAll();
     }
 
-    public Optional<Produit> getProduitById(Long id) {
+    public Optional<Produit> findById(Long id) {
         return produitRepository.findById(id);
     }
 
-    public Produit saveProduit(Produit produit) {
+    public Produit save(Produit produit) {
         return produitRepository.save(produit);
     }
 
-    public void deleteProduit(Long id) {
-        produitRepository.deleteById(id);
-    }
+    public void delete(Long id) {
+        Optional<Produit> produit = produitRepository.findById(id);
+        produit.ifPresent(p -> {
+            if (p.getImageProduit() != null) {
+                try {
+                    imageService.deleteImage(p.getImageProduit());
+                } catch (java.io.IOException e) {
+                    // Handle the exception, e.g., log it
+                    e.printStackTrace();
+                }
+            }
+            produitRepository.deleteById(id);
+        });
+    
+    }  
 
-    public Produit updateProduit(Long id, Produit produit) {
-        if (produitRepository.existsById(id)) {
-            produit.setId(id);
-            return produitRepository.save(produit);
-        }
-        return null;
-    }
 }

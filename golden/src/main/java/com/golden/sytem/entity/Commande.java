@@ -18,6 +18,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "commandes")
@@ -40,15 +41,24 @@ public class Commande {
     private StatutCommande statut;
 
     @OneToOne
-    @JoinColumn(name = "table_id", nullable = false)
+    @JoinColumn(name = "table_id", nullable = true)
     private RestaurantTable table;
 
     @ManyToOne
-    @JoinColumn(name = "employe_id", nullable = false)
+    @JoinColumn(name = "employe_id", nullable = true)
     private Employe employe;
 
-    @Column(nullable = false)
-    private String serveur;
+    @Column(name = "grand_total", nullable = false)
+    private BigDecimal grandTotal = BigDecimal.ZERO;
+
+    public enum StatutCommande {
+        EN_COURS,
+        SERVIE,
+        ANNULEE,
+        TERMINEE,
+        NON_PAYER,
+        PAYER
+    }
 
     @PrePersist
     public void prePersist() {
@@ -63,8 +73,5 @@ public class Commande {
         }
     }
 
-    public enum StatutCommande {
-        NON_PAYER,
-        PAYER
-    }
+
 }
