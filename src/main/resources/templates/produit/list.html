@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste des Produits</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        .product-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .actions {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Header Section -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Liste des Produits</h2>
+            <div>
+                <a href="/gallery" class="btn btn-info me-2">
+                    <i class="bi bi-images"></i> Galerie
+                </a>
+                <a href="/produits/nouveau" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Nouveau Produit
+                </a>
+            </div>
+        </div>
+
+        <!-- Alert Messages -->
+        <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${message}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <div class="col" th:each="produit : ${produits}">
+                <div class="card h-100">
+                    <img th:if="${produit.imageProduit}" 
+                         th:src="@{${produit.imageProduit}}" 
+                         class="card-img-top product-image" 
+                         alt="Image du produit"
+                         onerror="this.onerror=null; this.src='/images/placeholder.png';">
+                    <div th:if="${#strings.isEmpty(produit.imageProduit)}" 
+                         class="card-img-top product-image bg-light d-flex align-items-center justify-content-center">
+                        <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" th:text="${produit.nomProduit}">Nom du produit</h5>
+                        <p class="card-text" th:text="${produit.description}">Description</p>
+                        <p class="card-text">
+                            <small class="text-muted">Type: </small>
+                            <span th:text="${produit.type}">Type</span>
+                        </p>
+                        <p class="card-text">
+                            <small class="text-muted">Stock: </small>
+                            <span th:text="${produit.stockDisponible}">Stock</span>
+                        </p>
+                        <p class="card-text">
+                            <small class="text-muted">Prix: </small>
+                            <span th:text="${#numbers.formatDecimal(produit.prixUnitaire, 1, 2)} + ' $'">Prix</span>
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex justify-content-between">
+                            <a th:href="@{/produits/edit/{id}(id=${produit.id})}" 
+                               class="btn btn-outline-primary btn-sm">
+                               <i class="bi bi-pencil"></i> Modifier
+                            </a>
+                            <form th:action="@{/produits/delete/{id}(id=${produit.id})}" 
+                                  method="post" 
+                                  class="d-inline"
+                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce produit?');">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash"></i> Supprimer
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
