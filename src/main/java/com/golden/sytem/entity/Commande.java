@@ -51,6 +51,9 @@ public class Commande {
     @Column(name = "grand_total", nullable = false)
     private BigDecimal grandTotal = BigDecimal.ZERO;
 
+    @Column(name = "notes", length = 500)
+    private String notes;
+
     public enum StatutCommande {
         EN_COURS,
         SERVIE,

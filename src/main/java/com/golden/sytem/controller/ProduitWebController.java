@@ -3,6 +3,8 @@ package com.golden.sytem.controller;
 import com.golden.sytem.entity.Produit;
 import com.golden.sytem.entity.TypeProduit;
 import com.golden.sytem.service.ProduitService;
+import java.math.BigDecimal;
+import com.golden.sytem.service.CommandeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.propertyeditors.StringTrimmerEditor;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.golden.sytem.service.RestaurantTableService;
 import org.springframework.web.util.UriComponents;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
@@ -103,6 +106,32 @@ public class ProduitWebController {
     public String listProduits(Model model) {
         model.addAttribute("produits", produitService.findAll());
         return "produit/list";
+    }
+
+    @Autowired
+    private RestaurantTableService restaurantTableService;
+
+    @Autowired
+    private CommandeService commandeService;
+
+    @GetMapping("/gallery")
+    public String showGallery(Model model) {
+        model.addAttribute("produits", produitService.findAll());
+        model.addAttribute("tables", restaurantTableService.findAll());
+
+        // Get current active order
+        commandeService.getCurrentActiveOrder().ifPresent(activeOrder -> {
+            model.addAttribute("activeOrder", activeOrder);
+            model.addAttribute("cartItems", commandeService.getLignesDeCommande(activeOrder.getId()));
+            // Calculate cart total
+            BigDecimal total = commandeService.getLignesDeCommande(activeOrder.getId())
+                .stream()
+                .<BigDecimal>map(item -> item.getProduit().getPrixUnitaire().multiply(BigDecimal.valueOf(item.getQuantite())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            model.addAttribute("cartTotal", total);
+        });
+
+        return "gallery/index";
     }
 
     @GetMapping("/nouveau")

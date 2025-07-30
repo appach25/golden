@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>POS - Interactive Gallery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .pos-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .menu-section {
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+        }
+        .order-section {
+            background-color: white;
+            border-left: 1px solid #dee2e6;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+        }
+        .order-header {
+            padding: 20px 20px 10px 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .order-content {
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .order-footer {
+            padding: 20px;
+            background-color: white;
+            border-top: 1px solid #dee2e6;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        .product-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            background: white;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .stock-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(40, 167, 69, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            z-index: 1;
+        }
+        .product-card {
+            position: relative;
+        }
+        .product-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .order-items {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .order-controls {
+            background: white;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+        .category-tabs {
+            padding: 10px 20px;
+            background: white;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .total-section {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="pos-container">
+        <!-- Left side - Menu Items -->
+        <div class="menu-section">
+            <!-- Category Tabs -->
+            <div class="category-tabs">
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary active">All Items</button>
+                    <button type="button" class="btn btn-outline-primary">Category 1</button>
+                    <button type="button" class="btn btn-outline-primary">Category 2</button>
+                    <button type="button" class="btn btn-outline-primary">Category 3</button>
+                </div>
+            </div>
+
+            <!-- Product Grid -->
+            <div class="product-grid">
+                <div th:each="produit : ${produits}" class="product-card" 
+                     th:data-product-id="${produit.id}" 
+                     th:data-product-name="${produit.nomProduit}" 
+                     th:data-product-price="${produit.prixUnitaire}" 
+                     th:data-product-stock="${produit.stockDisponible}"
+                     onclick="addToOrder(this)">
+                    <div class="stock-badge" th:if="${produit.stockDisponible > 0}" th:text="${produit.stockDisponible + ' in stock'}"></div>
+                    <img th:if="${produit.imageProduit}" 
+                         th:src="@{${produit.imageProduit}}"
+                         class="product-image"
+                         th:alt="${produit.nomProduit}">
+                    <h5 th:text="${produit.nomProduit}">Product Name</h5>
+                    <p class="text-primary" th:text="'$' + ${#numbers.formatDecimal(produit.prixUnitaire, 1, 2)}">$0.00</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right side - Order Details -->
+        <div class="order-section">
+            <div class="order-header">
+                <h3>Current Order</h3>
+                
+                <!-- Table Selection -->
+                <div class="mb-3">
+                    <label for="tableNumber" class="form-label">Select Table</label>
+                    <select class="form-select" id="tableNumber" required>
+                        <option value="">Choose a table...</option>
+                        <th:block th:each="table : ${tables}">
+                            <option th:value="${table.numero}" th:text="${table.name + ' (' + table.nbPlaces + ' places)'}">Table 1</option>
+                        </th:block>
+                    </select>
+                </div>
+            </div>
+
+            <div class="order-content">
+                <!-- Order Items -->
+                <div class="order-items">
+                    <div id="orderItemsList" class="mb-3">
+                        <!-- Order items will be dynamically added here -->
+                    </div>
+                    <div class="alert alert-info" id="emptyCartMessage" style="display: none;">
+                        No items in order yet. Click on products to add them.
+                    </div>
+                </div>
+
+                <!-- Total Section -->
+                <div class="total-section">
+                    <div class="d-flex justify-content-between">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">$0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Tax (10%):</span>
+                        <span id="tax">$0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Total:</span>
+                        <span id="total">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Controls -->
+            <div class="order-footer">
+                <div class="mb-3">
+                    <label for="orderNotes" class="form-label">Order Notes</label>
+                    <textarea class="form-control" id="orderNotes" rows="2"></textarea>
+                </div>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" onclick="submitOrder()">Place Order</button>
+                    <button class="btn btn-outline-secondary" onclick="clearOrder()">Clear Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentOrder = {
+            items: [],
+            tableNumber: null,
+            notes: ''
+        };
+
+        function addToOrder(productCard) {
+            const productId = productCard.dataset.productId;
+            const productName = productCard.dataset.productName;
+            const productPrice = parseFloat(productCard.dataset.productPrice);
+            const stockAvailable = parseInt(productCard.dataset.productStock);
+
+            const existingItem = currentOrder.items.find(item => item.productId === productId);
+            
+            if (existingItem) {
+                if (existingItem.quantity < stockAvailable) {
+                    existingItem.quantity++;
+                    updateOrderDisplay();
+                } else {
+                    alert('Sorry, no more stock available for this item.');
+                }
+            } else if (stockAvailable > 0) {
+                currentOrder.items.push({
+                    productId: productId,
+                    name: productName,
+                    price: productPrice,
+                    quantity: 1,
+                    maxStock: stockAvailable
+                });
+                updateOrderDisplay();
+            } else {
+                alert('Sorry, this item is out of stock.');
+            }
+        }
+
+        function updateQuantity(productId, newQuantity) {
+            const item = currentOrder.items.find(item => item.productId === productId);
+            if (!item) return;
+
+            if (newQuantity < 1) {
+                currentOrder.items = currentOrder.items.filter(item => item.productId !== productId);
+            } else if (newQuantity <= item.maxStock) {
+                item.quantity = newQuantity;
+            } else {
+                alert(`Sorry, only ${item.maxStock} items available in stock.`);
+                item.quantity = item.maxStock;
+            }
+            updateOrderDisplay();
+        }
+
+        function removeItem(productId) {
+            currentOrder.items = currentOrder.items.filter(item => item.productId !== productId);
+            updateOrderDisplay();
+        }
+
+        function updateOrderDisplay() {
+            const orderList = document.getElementById('orderItemsList');
+            const emptyCartMessage = document.getElementById('emptyCartMessage');
+            orderList.innerHTML = '';
+
+            let subtotal = 0;
+
+            if (currentOrder.items.length === 0) {
+                emptyCartMessage.style.display = 'block';
+            } else {
+                emptyCartMessage.style.display = 'none';
+                
+                currentOrder.items.forEach(item => {
+                    const itemTotal = item.price * item.quantity;
+                    subtotal += itemTotal;
+
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'order-item bg-light rounded p-3 mb-2';
+                    itemElement.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">${item.name}</h6>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeItem('${item.productId}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="input-group" style="width: 120px">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="updateQuantity('${item.productId}', ${item.quantity - 1})">-</button>
+                                <input type="number" class="form-control form-control-sm text-center" value="${item.quantity}" 
+                                       min="1" onchange="updateQuantity('${item.productId}', this.value)">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="updateQuantity('${item.productId}', ${item.quantity + 1})">+</button>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-muted small">$${item.price.toFixed(2)} × ${item.quantity}</div>
+                                <div class="fw-bold">$${itemTotal.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    `;
+                    orderList.appendChild(itemElement);
+                });
+            }
+
+            const tax = subtotal * 0.1;
+            const total = subtotal + tax;
+
+            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+            document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+        }
+
+        function submitOrder() {
+            const tableSelect = document.getElementById('tableNumber');
+            const tableNumber = tableSelect.value;
+            const tableText = tableSelect.options[tableSelect.selectedIndex].text;
+            const notes = document.getElementById('orderNotes').value;
+
+            if (!tableNumber) {
+                alert('Please enter a table number');
+                return;
+            }
+
+            if (currentOrder.items.length === 0) {
+                alert('Please add items to the order');
+                return;
+            }
+
+            const orderData = {
+                tableId: parseInt(tableNumber),
+                notes: notes,
+                items: currentOrder.items.map(item => ({
+                    produitId: item.productId,
+                    quantite: item.quantity
+                }))
+            };
+
+            fetch('/commandes/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('Order placed successfully!');
+                clearOrder();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error placing order');
+            });
+        }
+
+        function clearOrder() {
+            currentOrder.items = [];
+            document.getElementById('tableNumber').value = '';
+            document.getElementById('orderNotes').value = '';
+            updateOrderDisplay();
+        }
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

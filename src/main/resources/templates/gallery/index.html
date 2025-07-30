@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <title>Product Gallery</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         .gallery-item {
             margin-bottom: 20px;
+            cursor: pointer;
         }
         .gallery-item img {
             width: 100%;
@@ -39,32 +41,248 @@
             font-weight: 700;
             margin-top: 0.5rem;
         }
+        .cart-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 350px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            padding: 20px;
+        }
+        .cart-item {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+        .cart-total {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            font-weight: bold;
+        }
+        .main-content {
+            margin-right: 380px;
+        }
     </style>
 </head>
 <body>
-    <div class="container py-5">
-        <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
-            <span th:text="${message}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        <h1 class="text-center mb-5">Product Gallery</h1>
-        <div class="row">
-            <div th:each="produit : ${produits}" class="col-md-4 col-sm-6 gallery-item">
-                <div class="card">
-                    <img th:if="${produit.imageProduit}" 
-                         th:src="@{${produit.imageProduit}}"
-                         class="card-img-top"
-                         th:alt="${produit.nomProduit}">
-                    <div class="card-body">
-                        <h5 class="card-title" th:text="${produit.nomProduit}">Product Name</h5>
-                        <p class="card-text" th:if="${produit.description}" th:text="${#strings.abbreviate(produit.description, 100)}">Description</p>
-                        <p class="price" th:text="'$' + ${#numbers.formatDecimal(produit.prixUnitaire, 1, 2)}">Price</p>
+    <div class="main-content">
+        <div class="container py-5">
+            <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <span th:text="${message}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <h1 class="text-center mb-5">Product Gallery</h1>
+
+            <!-- Order Form Section -->
+            <div class="card mb-5">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Place New Order</h4>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/commandes/create}" method="POST" class="row g-3">
+                        <div class="col-md-6">
+                            <label for="tableId" class="form-label">Table Number</label>
+                            <input type="number" class="form-control" id="tableId" name="tableId" min="1" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label for="notes" class="form-label">Order Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Special instructions or additional notes for the order"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Submit Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="row">
+                <div th:each="produit : ${produits}" class="col-md-4 col-sm-6 gallery-item">
+                    <div class="card" th:data-product-id="${produit.id}" onclick="openOrderModal(this)">
+                        <img th:if="${produit.imageProduit}" 
+                             th:src="@{${produit.imageProduit}}"
+                             class="card-img-top"
+                             th:alt="${produit.nomProduit}">
+                        <div class="card-body">
+                            <h5 class="card-title" th:text="${produit.nomProduit}">Product Name</h5>
+                            <p class="card-text" th:if="${produit.description}" th:text="${#strings.abbreviate(produit.description, 100)}">Description</p>
+                            <p class="price" th:text="'$' + ${#numbers.formatDecimal(produit.prixUnitaire, 1, 2)}">Price</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Cart Panel -->
+    <div class="cart-panel">
+        <h4 class="mb-4">Shopping Cart</h4>
+        <div th:if="${#lists.isEmpty(cartItems)}" class="text-muted">
+            No items in cart
+        </div>
+        <div th:each="item : ${cartItems}" class="cart-item">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 th:text="${item.produit.nomProduit}">Product Name</h6>
+                    <div class="d-flex align-items-center">
+                        <input type="number" class="form-control form-control-sm me-2" style="width: 70px"
+                               th:value="${item.quantite}" min="1"
+                               th:onchange="'modifierQuantite(' + ${item.produit.id} + ', this.value)'">
+                        x $<span th:text="${#numbers.formatDecimal(item.produit.prixUnitaire, 1, 2)}">0.00</span>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <div>$<span th:text="${#numbers.formatDecimal(item.sousTotal, 1, 2)}">0.00</span></div>
+                    <button class="btn btn-sm btn-danger mt-2" 
+                            th:onclick="'supprimerDuPanier(' + ${item.produit.id} + ')'">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="cart-total d-flex justify-content-between">
+            <span>Total:</span>
+            <span>$<span th:text="${#numbers.formatDecimal(cartTotal, 1, 2)}">0.00</span></span>
+        </div>
+        <!-- Order Form -->
+        <div class="mt-4" th:if="${!#lists.isEmpty(cartItems)}">
+            <hr>
+            <h5 class="mb-3">Place Order</h5>
+            <form th:action="@{/commande/create}" method="POST">
+                <div class="mb-3">
+                    <label for="tableNumber" class="form-label">Table Number</label>
+                    <input type="number" class="form-control" id="tableNumber" name="tableId" min="1" required>
+                </div>
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Additional Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                </div>
+                <button type="submit" class="btn btn-success w-100">Place Order</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for adding to cart -->
+    <div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderModalLabel">Add to Cart</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="orderForm" method="POST" onsubmit="return ajouterAuPanier(event)">
+                    <div class="modal-body">
+                        <input type="hidden" id="productId" name="produitId">
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity</label>
+                            <input type="number" class="form-control" id="quantity" name="quantite" min="1" value="1" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add to Cart</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openOrderModal(cardElement) {
+            const productId = cardElement.getAttribute('data-product-id');
+            document.getElementById('productId').value = productId;
+            const modal = new bootstrap.Modal(document.getElementById('orderModal'));
+            modal.show();
+        }
+
+        function ajouterAuPanier(event) {
+            event.preventDefault();
+            const productId = document.getElementById('productId').value;
+            const quantity = document.getElementById('quantity').value;
+
+            fetch('/panier/ajouter?produitId=' + productId + '&quantite=' + quantity, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('orderModal'));
+                modal.hide();
+                
+                // Refresh the page to update the cart
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding item to cart');
+            });
+
+            return false;
+        }
+
+        function modifierQuantite(produitId, nouvelleQuantite) {
+            fetch('/panier/modifier?produitId=' + produitId + '&quantite=' + nouvelleQuantite, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating quantity');
+            });
+        }
+
+        function supprimerDuPanier(produitId) {
+            fetch('/panier/supprimer?produitId=' + produitId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error removing item from cart');
+            });
+        }
+
+        function viderPanier() {
+            fetch('/panier/vider', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error emptying cart');
+            });
+        }
+    </script>
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

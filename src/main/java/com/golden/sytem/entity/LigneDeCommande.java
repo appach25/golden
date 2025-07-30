@@ -27,8 +27,12 @@ public class LigneDeCommande {
     private Produit produit;
 
     @ManyToOne
-    @JoinColumn(name = "commande_id", nullable = false)
+    @JoinColumn(name = "commande_id")
     private Commande commande;
+
+    @ManyToOne
+    @JoinColumn(name = "panier_id")
+    private Panier panier;
 
     @PrePersist
     @PreUpdate

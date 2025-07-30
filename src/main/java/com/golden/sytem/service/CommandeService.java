@@ -24,8 +24,13 @@ public class CommandeService {
     @Autowired
     private ProduitRepository produitRepository;
 
+    @Transactional(readOnly = true)
+    public List<LigneDeCommande> getLignesDeCommande(Long commandeId) {
+        return ligneDeCommandeRepository.findByCommandeId(commandeId);
+    }
+
     @Transactional
-    public Commande saveCommande(Commande commande) {
+    public Commande save(Commande commande) {
         try {
             System.out.println("Service - Saving commande: " + commande);
             Commande saved = commandeRepository.save(commande);
@@ -38,22 +43,36 @@ public class CommandeService {
         }
     }
 
-    @Transactional
-    public LigneDeCommande addLigneDeCommande(Long commandeId, LigneDeCommande ligneDeCommande) {
-        Commande commande = commandeRepository.findById(commandeId)
-                .orElseThrow(() -> new RuntimeException("Commande not found"));
-        
-        Produit produit = produitRepository.findById(ligneDeCommande.getProduit().getId())
-                .orElseThrow(() -> new RuntimeException("Produit not found"));
-        
-        ligneDeCommande.setCommande(commande);
-        ligneDeCommande.setProduit(produit);
-        
-        return ligneDeCommandeRepository.save(ligneDeCommande);
+    @Transactional(readOnly = true)
+    public java.util.Optional<Commande> getCurrentActiveOrder() {
+        return commandeRepository.findFirstByStatutOrderByIdDesc(Commande.StatutCommande.EN_COURS);
     }
 
-    public List<LigneDeCommande> getLignesDeCommande(Long commandeId) {
-        return ligneDeCommandeRepository.findByCommandeId(commandeId);
+    @Transactional
+    public LigneDeCommande addLigneDeCommande(Long commandeId, LigneDeCommande ligneDeCommande) {
+        try {
+            System.out.println("Adding ligne de commande for commande ID: " + commandeId);
+            System.out.println("Ligne de commande details: " + ligneDeCommande);
+
+            Commande commande = commandeRepository.findById(commandeId)
+                    .orElseThrow(() -> new RuntimeException("Commande not found"));
+            System.out.println("Found commande: " + commande);
+            
+            Produit produit = produitRepository.findById(ligneDeCommande.getProduit().getId())
+                    .orElseThrow(() -> new RuntimeException("Produit not found"));
+            System.out.println("Found produit: " + produit);
+            
+            ligneDeCommande.setCommande(commande);
+            ligneDeCommande.setProduit(produit);
+            
+            LigneDeCommande saved = ligneDeCommandeRepository.save(ligneDeCommande);
+            System.out.println("Successfully saved ligne de commande: " + saved);
+            return saved;
+        } catch (Exception e) {
+            System.err.println("Error adding ligne de commande: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     public Commande getCommande(Long id) {
