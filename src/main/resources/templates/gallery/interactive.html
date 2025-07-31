@@ -311,57 +311,52 @@
             document.getElementById('total').textContent = `$${total.toFixed(2)}`;
         }
 
-        function submitOrder() {
-            const tableSelect = document.getElementById('tableNumber');
-            const tableNumber = tableSelect.value;
-            const tableText = tableSelect.options[tableSelect.selectedIndex].text;
-            const notes = document.getElementById('orderNotes').value;
-
-            if (!tableNumber) {
-                alert('Please enter a table number');
+        async function submitOrder() {
+            const tableId = document.getElementById('tableNumber').value;
+            if (!tableId) {
+                alert('Please select a table first.');
                 return;
             }
 
             if (currentOrder.items.length === 0) {
-                alert('Please add items to the order');
+                alert('Please add some items to your order first.');
                 return;
             }
 
             const orderData = {
-                tableId: parseInt(tableNumber),
-                notes: notes,
+                tableId: parseInt(tableId),
+                notes: document.getElementById('orderNotes').value,
                 items: currentOrder.items.map(item => ({
-                    produitId: item.productId,
-                    quantite: item.quantity
+                    productId: parseInt(item.productId),
+                    quantity: item.quantity
                 }))
             };
 
-            fetch('/commandes/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(orderData)
-            })
-            .then(response => {
+            try {
+                const response = await fetch('/gallery-interactive/submit-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(orderData)
+                });
+
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Network response was not ok');
                 }
-                return response.json();
-            })
-            .then(data => {
+
+                const result = await response.json();
                 alert('Order placed successfully!');
                 clearOrder();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error placing order');
-            });
+            } catch (error) {
+                console.error('Error submitting order:', error);
+                alert('Failed to place order: ' + error.message);
+            }
         }
 
         function clearOrder() {
             currentOrder.items = [];
-            document.getElementById('tableNumber').value = '';
             document.getElementById('orderNotes').value = '';
             updateOrderDisplay();
         }
