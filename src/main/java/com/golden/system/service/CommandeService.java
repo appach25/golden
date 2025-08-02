@@ -26,6 +26,11 @@ public class CommandeService {
     private ProduitRepository produitRepository;
 
     @Transactional(readOnly = true)
+    public List<Commande> getAllCommandes() {
+        return commandeRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
     public List<LigneDeCommande> getLignesDeCommande(Long commandeId) {
         return ligneDeCommandeRepository.findByCommandeId(commandeId);
     }

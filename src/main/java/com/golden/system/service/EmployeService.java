@@ -7,12 +7,16 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class EmployeService {
 
     @Autowired
     private EmployeRepository employeRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public List<Employe> getAllEmployes() {
         return employeRepository.findAll();
@@ -27,6 +31,7 @@ public class EmployeService {
         if (employeRepository.existsByLogin(employe.getLogin())) {
             throw new RuntimeException("Login déjà utilisé");
         }
+        employe.setMotDePasse(passwordEncoder.encode(employe.getMotDePasse()));
         return employeRepository.save(employe);
     }
 
@@ -45,7 +50,10 @@ public class EmployeService {
             existingEmploye.setPrenom(employeDetails.getPrenom());
             existingEmploye.setRole(employeDetails.getRole());
             existingEmploye.setLogin(employeDetails.getLogin());
-            existingEmploye.setMotDePasse(employeDetails.getMotDePasse());
+            // Only update password if a new one is provided
+            if (employeDetails.getMotDePasse() != null && !employeDetails.getMotDePasse().isEmpty()) {
+                existingEmploye.setMotDePasse(passwordEncoder.encode(employeDetails.getMotDePasse()));
+            }
             
             return employeRepository.save(existingEmploye);
         }

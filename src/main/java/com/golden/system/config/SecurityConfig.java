@@ -19,12 +19,15 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/login").permitAll()
+                .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/employes/**").hasRole("ADMIN")
                 .requestMatchers("/api/orders/**").hasAnyRole("ADMIN", "SERVEUR", "CAISSIER")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
                 .loginPage("/login")
+                .usernameParameter("username")
+                .passwordParameter("password")
                 .defaultSuccessUrl("/employes", true)
                 .permitAll()
             )

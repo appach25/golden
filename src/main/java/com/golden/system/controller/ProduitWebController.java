@@ -49,6 +49,12 @@ public class ProduitWebController {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
+    @GetMapping
+    public String listProduits(Model model) {
+        model.addAttribute("produits", produitService.findAll());
+        return "produit/list";
+    }
+
     @PostConstruct
     public void init() {
         try {

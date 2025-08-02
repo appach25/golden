@@ -12,6 +12,8 @@ import com.golden.system.service.RestaurantTableService;
 import com.golden.system.service.PanierService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,6 +40,12 @@ public class CommandeController {
 
     @Autowired
     private PanierService panierService;
+
+    @GetMapping
+    public String listCommandes(Model model) {
+        model.addAttribute("commandes", commandeService.getAllCommandes());
+        return "commande/list";
+    }
 
     @PostMapping("/create")
     public String createOrder(@RequestParam Long tableId,

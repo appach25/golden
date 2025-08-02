@@ -33,8 +33,6 @@ public class EmployeController {
 
     @PostMapping
     public String createEmploye(@ModelAttribute Employe employe) {
-        // Encode password before saving
-        employe.setMotDePasse(passwordEncoder.encode(employe.getMotDePasse()));
         employeService.createEmploye(employe);
         return "redirect:/employes";
     }
